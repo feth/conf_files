@@ -5,10 +5,9 @@ Dirty tool to deploy config scripts.
 We use this in conjunction with a git repo where every machine has its branch
 """
 
-from argparse import ArgumentParser
 from csv import reader
 from os import X_OK, access, environ, makedirs, symlink, unlink
-from os.path import dirname, expanduser, exists, islink, join, realpath
+from os.path import dirname, expanduser, exists, isfile, islink, join, realpath
 from shutil import rmtree
 import sys
 import logging
@@ -22,7 +21,7 @@ def delconf(filename):
     """
     deletes anything you ask
     """
-    if islink(filename):
+    if isfile(filename) or islink(filename):
         unlink(filename)
     else:
         rmtree(filename)
@@ -40,8 +39,8 @@ class Deployer(object):
         dst: the base installation dir (likely home)
         """
         self.syspath = syspath.split(':')
-        self.src = src
-        self.dst = dst
+        self.src = realpath(src)
+        self.dst = realpath(dst)
 
     def has_exe(self, exename):
         """
@@ -59,6 +58,8 @@ class Deployer(object):
         unlinks previous install, which is rude.
         installs new conf
 
+        If confsrc does not exist, nothing is done
+
         exename: the exe that must exist if you want config files installation
         confsrc: the place
         """
@@ -74,8 +75,13 @@ class Deployer(object):
         confsrc = join(self.src, confsrc)
         confdst = join(self.dst, confdst)
 
+        if not exists(confsrc):
+            logger.warning("Missing config source! conf.list says it should "
+                "be at %(confsrc)s. Skipping", {"confsrc": confsrc})
+            return
+
         #wipe
-        if exists(confdst):
+        if exists(confdst) or islink(confdst):
             logger.debug('Removing %s' % confdst)
             delconf(confdst)
 
@@ -86,7 +92,7 @@ class Deployer(object):
             makedirs(basedir)
 
         #install
-        symlink(realpath(confsrc), confdst)
+        symlink(confsrc, confdst)
         logger.debug('\t Copy done')
 
 
@@ -94,6 +100,13 @@ def parse_args():
     """
     returns parsed argv
     """
+    try:
+        from argparse import ArgumentParser
+    except ImportError:
+        logging.error("Unable to locate argparse module. "
+                "Maybe install python-argparse")
+        exit(2)
+
     parser = ArgumentParser(
         description='deploys your config files the dirty way')
     parser.add_argument('--sourcedir', '-s', default=SRC,

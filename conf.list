@@ -7,7 +7,7 @@
 awesome,awesome3/rc.lua,.config/awesome/rc.lua
 awesome,awesome3/theme.lua,.config/awesome/theme.lua
 bash,xmodmap,.xmodmap
-git-core,gitconfig_home,.gitconfig
+git,gitconfig_home,.gitconfig
 irssi,irssi,.irssi
 lynx,lynxrc,.lynxrc
 mercurial,hgrc,.hgrc
